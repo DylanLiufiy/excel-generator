@@ -30,6 +30,7 @@ jobs:
           ws_g.sheet_view.showGridLines = True
           ws_d.sheet_view.showGridLines = True
 
+          # 商务风格视觉样式定义
           font_main = Font(name='Segoe UI', size=9)
           font_bold = Font(name='Segoe UI', size=9, bold=True)
           font_title = Font(name='Segoe UI', size=14, bold=True, color='FFFFFF')
@@ -46,15 +47,19 @@ jobs:
           align_left = Alignment(horizontal='left', vertical='center', wrap_text=True)
           align_right = Alignment(horizontal='right', vertical='center', wrap_text=True)
 
-          # ==========================================
-          # 1. 绘制 Sheet 1: General (总体概述)
-          # ==========================================
+          # =========================================================================
+          # 1. 绘制 Sheet 1: General (总体概述看板)
+          # =========================================================================
           ws_g.merge_cells('A1:D1')
           ws_g['A1'] = '项目研发费用与工时预算报价单 (汇总看板)'
           ws_g['A1'].font = font_title; ws_g['A1'].fill = fill_dark_blue; ws_g['A1'].alignment = align_center
           ws_g.row_dimensions.height = 40
           
-          info = [('项目名称：', '[请替换项目名称]', '报价日期：', '2026-06-26'), ('客户公司：', '[请替换客户名称]', '基础人天费率：', '=Detail!B1')]
+          # 💡【此处可修改】顶部的项目基础抬头信息
+          info = [
+              ('项目名称：', '[请替换为您的具体项目名称]', '报价日期：', '2026-06-26'), 
+              ('客户公司：', '[请替换为您的客户公司名称]', '基础人天费率：', '=Detail!B1')
+          ]
           for idx, r_data in enumerate(info, start=3):
               for c_idx, val in enumerate(r_data, start=1):
                   cell = ws_g.cell(row=idx, column=c_idx, value=val)
@@ -66,14 +71,19 @@ jobs:
           for c_i, h in enumerate(g_headers, start=1):
               c = ws_g.cell(row=7, column=c_i, value=h); c.font = font_bold; c.fill = fill_gray; c.border = thin_border; c.alignment = align_center
               
-          stage_data = [['BBA', 'EE/I-V', '2026-Q1', '2026-Q2', '2026-Q3', '2026-Q4', '2027-Q1', 'TBD'], ['BMW CEU', 'EE/I-V', '2026-Q1', '2026-Q2', '2026-Q3', '2026-Q4', '2027-Q1', 'TBD'], ['MINI', 'EE/I-V', '2026-Q2', '2026-Q3', '2026-Q4', '2027-Q1', '2027-Q2', '进行中']]
+          # 💡【此处可修改】各车型的里程碑开发节点和状态，可自由修改引号内的文本
+          stage_data = [
+              ['BBA', 'EE/I-V', '2026-Q1', '2026-Q2', '2026-Q3', '2026-Q4', '2027-Q1', 'TBD'], 
+              ['BMW CEU', 'EE/I-V', '2026-Q1', '2026-Q2', '2026-Q3', '2026-Q4', '2027-Q1', 'TBD'], 
+              ['MINI', 'EE/I-V', '2026-Q2', '2026-Q3', '2026-Q4', '2027-Q1', '2027-Q2', '进行中']
+          ]
           for r_i, row in enumerate(stage_data, start=8):
               for c_i, val in enumerate(row, start=1):
                   c = ws_g.cell(row=r_i, column=c_i, value=val); c.font = font_main; c.border = thin_border; c.alignment = align_center
                   if c_i > 2: c.fill = fill_green
                   if val == 'TBD': c.fill = fill_yellow
 
-          ws_g.cell(row=13, column=1, value='Execution Dept. 研发费用预算汇总（自动联动）').font = font_section
+          ws_g.cell(row=13, column=1, value='Execution Dept. 研发费用预算汇总（自动联动明细页）').font = font_section
           quote_headers = ['执行部门分类', '核算总工时 (小时)', '折合人天 (8h/天)', '最终商务报价 (元)']
           for c_i, h in enumerate(quote_headers, start=1):
               c = ws_g.cell(row=14, column=c_i, value=h); c.font = Font(name='Segoe UI', size=9, bold=True, color='FFFFFF'); c.fill = fill_dark_blue; c.border = thin_border; c.alignment = align_center
@@ -106,9 +116,10 @@ jobs:
           ws_g.cell(row=18, column=4).number_format = '￥#,##0.00'; ws_g.cell(row=18, column=3).number_format = '0.0'
           for c in range(1, 5): ws_g.cell(row=18, column=c).fill = fill_total; ws_g.cell(row=18, column=c).border = thin_border
 
-          # ==========================================
-          # 2. 绘制 Sheet 2: Detail (明细打勾矩阵)
-          # ==========================================
+          # =========================================================================
+          # 2. 绘制 Sheet 2: Detail (明细交叉打勾矩阵)
+          # =========================================================================
+          # 💡【此处可修改】设置整个项目的基础人天费率，此处修改后，全表总价自动重算
           ws_d.cell(row=1, column=1, value='标准人天费率设定:').font = font_bold
           ws_d.cell(row=1, column=2, value=2000).font = font_bold
           ws_d.cell(row=1, column=2).number_format = '￥#,##0'
@@ -122,6 +133,8 @@ jobs:
           for idx, h in enumerate(matrix_cols, start=5):
               c = ws_d.cell(row=d_start_row, column=idx, value=h); c.font = font_bold; c.fill = fill_gray; c.border = thin_border; c.alignment = align_center
 
+          # 💡【此处可修改】测试任务核心矩阵。
+          # 字段格式依次为: ['大类名称', '任务细分描述', 计划天数, 计划工时, ['车型1是否勾选', '车型2...', '车型3...', '车型4...', '车型5...', '车型6...']]
           items_data = [
               ['Vehicle Management', 'Vehicle Tracking Support', 10, 80, ['✓', '', '✓', '', '✓', '']],
               ['Vehicle Management', 'Vehicle Engineering Support', 15, 120, ['✓', '✓', '✓', '✓', '', '']],
@@ -132,14 +145,18 @@ jobs:
               ['SW Management & Dev', 'ITS Script Development', 20, 160, ['✓', '✓', '✓', '✓', '✓', '✓']]
           ]
 
+          # 单格子独立安全填入，防止类型报错
           for r_idx, row_info in enumerate(items_data, start=d_start_row+1):
-              ws_d.cell(row=r_idx, column=1, value=row_info).alignment = align_left
-              ws_d.cell(row=r_idx, column=2, value=row_info).alignment = align_left
-              ws_d.cell(row=r_idx, column=3, value=row_info).alignment = align_center
-              ws_d.cell(row=r_idx, column=4, value=row_info).alignment = align_center
-              for c_idx, mark in enumerate(row_info, start=5):
+              ws_d.cell(row=r_idx, column=1, value=row_info[0]).alignment = align_left
+              ws_d.cell(row=r_idx, column=2, value=row_info[1]).alignment = align_left
+              ws_d.cell(row=r_idx, column=3, value=row_info[2]).alignment = align_center
+              ws_d.cell(row=r_idx, column=4, value=row_info[3]).alignment = align_center
+              
+              marks_list = row_info[4]
+              for c_idx, mark in enumerate(marks_list, start=5):
                   cell = ws_d.cell(row=r_idx, column=c_idx, value=mark); cell.alignment = align_center
                   if mark == '✓': cell.fill = fill_green
+                  
               for col in range(1, 5 + len(matrix_cols)):
                   c_obj = ws_d.cell(row=r_idx, column=col); c_obj.font = font_main; c_obj.border = thin_border
 
@@ -148,10 +165,12 @@ jobs:
           t_cell = ws_d.cell(row=tot_r, column=4, value=f'=SUM(D12:D{tot_r-1})')
           t_cell.font = font_bold; t_cell.fill = fill_yellow; t_cell.border = thin_border; t_cell.alignment = align_center
 
+          # 合并大类同类单元格
           ws_d.merge_cells('A12:A13')
           ws_d.merge_cells('A14:A15')
           ws_d.merge_cells('A16:A18')
 
+          # 智能安全适配最美观列宽算法
           for sheet in [ws_g, ws_d]:
               for col_idx in range(1, sheet.max_column + 1):
                   max_len = 0
@@ -177,4 +196,4 @@ jobs:
         with:
           name: excel-budget-sheet
           path: 项目研发报价明细表_标准模版.xlsx
-          
+                  
