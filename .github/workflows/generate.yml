@@ -23,7 +23,11 @@ jobs:
           from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
           wb = openpyxl.Workbook()
           ws_g = wb.active; ws_g.title = 'General'; ws_d = wb.create_sheet('Detail')
-          ws_g.views.sheetView.showGridLines = True; ws_d.views.sheetView.showGridLines = True
+          
+          # 正确的网格线显示设置语法
+          ws_g.sheet_view.showGridLines = True
+          ws_d.sheet_view.showGridLines = True
+          
           f_h = Font(name='Microsoft YaHei', size=11, bold=True, color='FFFFFF')
           fill_b = PatternFill(start_color='1F497D', end_color='1F497D', fill_type='solid')
           ws_g['A1'] = '项目研发项目报价单 (汇总概述)'; ws_g['A1'].font = Font(name='Microsoft YaHei', size=14, bold=True)
