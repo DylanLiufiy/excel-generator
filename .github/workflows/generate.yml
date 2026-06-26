@@ -1,4 +1,4 @@
-name: Auto Generate Excel
+name: Auto Generate Master Matrix Budget
 on: [push, workflow_dispatch]
 
 jobs:
@@ -21,29 +21,194 @@ jobs:
           python -c "
           import openpyxl
           from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+          from openpyxl.utils import get_column_letter
+
           wb = openpyxl.Workbook()
-          ws_g = wb.active; ws_g.title = 'General'; ws_d = wb.create_sheet('Detail')
           
-          # 正确的网格线显示设置语法
+          # 创建两个解耦的 Sheet
+          ws_g = wb.active
+          ws_g.title = 'General'
+          ws_d = wb.create_sheet('Detail')
+          
           ws_g.sheet_view.showGridLines = True
           ws_d.sheet_view.showGridLines = True
+
+          # 商务风格配色与字体定义
+          font_main = Font(name='Segoe UI', size=9)
+          font_bold = Font(name='Segoe UI', size=9, bold=True)
+          font_title = Font(name='Segoe UI', size=14, bold=True, color='FFFFFF')
+          font_section = Font(name='Segoe UI', size=11, bold=True, color='1F497D')
           
-          f_h = Font(name='Microsoft YaHei', size=11, bold=True, color='FFFFFF')
-          fill_b = PatternFill(start_color='1F497D', end_color='1F497D', fill_type='solid')
-          ws_g['A1'] = '项目研发项目报价单 (汇总概述)'; ws_g['A1'].font = Font(name='Microsoft YaHei', size=14, bold=True)
-          ws_g.cell(row=3, column=1, value='项目名称：'); ws_g.cell(row=3, column=2, value='[请替换名称]')
-          headers = ['模块/分类', '人天总计', '费用总计', '核心说明']
-          for idx, text in enumerate(headers, start=1):
-              c = ws_g.cell(row=5, column=idx, value=text); c.font = f_h; c.fill = fill_b
-          ws_g.cell(row=6, column=1, value='01 前端开发')
-          ws_g.cell(row=6, column=2, value='=SUM(Detail!C4:C6)')
-          ws_g.cell(row=6, column=3, value='=SUM(Detail!E4:E6)')
-          ws_d.cell(row=1, column=1, value='标准人天费率'); ws_d.cell(row=1, column=2, value=2000)
-          hd_d = ['序号', '开发内容', '人天', '单价', '费用小计', '备注']
-          for idx, text in enumerate(hd_d, start=1):
-              c = ws_d.cell(row=3, column=idx, value=text); c.font = f_h; c.fill = fill_b
-          ws_d.append([1, '用户登录与权限页面', 2, '=B1', '=C4*D4', '对接微信'])
-          ws_d.append([2, '核心数据大屏', 5, '=B1', '=C5*D5', '高要求动效'])
+          fill_dark_blue = PatternFill(start_color='1F497D', end_color='1F497D', fill_type='solid')
+          fill_green = PatternFill(start_color='C6EFCE', end_color='C6EFCE', fill_type='solid') # 图片淡绿
+          fill_yellow = PatternFill(start_color='FFEB9C', end_color='FFEB9C', fill_type='solid') # 图片亮黄
+          fill_gray = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid') # 表头浅灰
+          fill_total = PatternFill(start_color='E9EDF4', end_color='E9EDF4', fill_type='solid')
+          
+          thin_border = Border(
+              left=Side(style='thin', color='D9D9D9'), right=Side(style='thin', color='D9D9D9'),
+              top=Side(style='thin', color='D9D9D9'), bottom=Side(style='thin', color='D9D9D9')
+          )
+          align_center = Alignment(horizontal='center', vertical='center', wrap_text=True)
+          align_left = Alignment(horizontal='left', vertical='center', wrap_text=True)
+          align_right = Alignment(horizontal='right', vertical='center', wrap_text=True)
+
+          # ==========================================
+          # 1. 绘制 Sheet 1: General (总体概述与商务报价看板)
+          # ==========================================
+          ws_g.merge_cells('A1:D1')
+          ws_g['A1'] = '项目研发费用与工时预算报价单 (汇总看板)'
+          ws_g['A1'].font = font_title; ws_g['A1'].fill = fill_dark_blue; ws_g['A1'].alignment = align_center
+          ws_g.row_dimensions[1].height = 40
+          
+          # 基本信息
+          info = [('项目名称：', '[请替换项目名称]', '报价日期：', '2026-06-26'),
+                  ('客户公司：', '[请替换客户名称]', '基础人天费率：', '=Detail!B1')]
+          for idx, r_data in enumerate(info, start=3):
+              for c_idx, val in enumerate(r_data, start=1):
+                  cell = ws_g.cell(row=idx, column=c_idx, value=val)
+                  cell.font = font_bold if c_idx%2!=0 else font_main
+                  if val == '=Detail!B1': cell.number_format = '￥#,##0'
+                  
+          # 进度里程碑看板 (完全复刻图1左上角表格逻辑)
+          ws_g.cell(row=6, column=1, value='Test Stage & Requested Dept. (项目关键节点里程碑)').font = font_section
+          g_headers = ['Platform', 'Requested Dept', 'V1阶段', 'V2阶段', 'V3阶段', 'V4阶段', 'V5阶段', '当前状态']
+          for c_i, h in enumerate(g_headers, start=1):
+              c = ws_g.cell(row=7, column=c_i, value=h)
+              c.font = font_bold; c.fill = fill_gray; c.border = thin_border; c.alignment = align_center
+              
+          stage_data = [
+              ['BBA', 'EE/I-V', '2026-Q1', '2026-Q2', '2026-Q3', '2026-Q4', '2027-Q1', 'TBD'],
+              ['BMW CEU', 'EE/I-V', '2026-Q1', '2026-Q2', '2026-Q3', '2026-Q4', '2027-Q1', 'TBD'],
+              ['MINI', 'EE/I-V', '2026-Q2', '2026-Q3', '2026-Q4', '2027-Q1', '2027-Q2', '进行中']
+          ]
+          for r_i, row in enumerate(stage_data, start=8):
+              for c_i, val in enumerate(row, start=1):
+                  c = ws_g.cell(row=r_i, column=c_i, value=val)
+                  c.font = font_main; c.border = thin_border; c.alignment = align_center
+                  if c_i > 2: c.fill = fill_green
+                  if val == 'TBD': c.fill = fill_yellow
+
+          # 商务费用最终报价表（自动跨Sheet求和联动）
+          ws_g.cell(row=13, column=1, value='Execution Dept. 研发费用预算汇总（自动联动）').font = font_section
+          quote_headers = ['执行部门分类', '核算总工时 (小时)', '折合人天 (8h/天)', '最终商务报价 (元)']
+          for c_i, h in enumerate(quote_headers, start=1):
+              c = ws_g.cell(row=14, column=c_i, value=h)
+              c.font = font_bold; c.fill = fill_dark_blue; c.border = thin_border; c.alignment = align_center; c.font = Font(name='Segoe UI', size=9, bold=True, color='FFFFFF')
+              
+          # 通过公式直接抓取Detail的数据
+          ws_g.cell(row=15, column=1, value='Vehicle Management (车辆管理)')
+          ws_g.cell(row=15, column=2, value='=SUM(Detail!D12:D13)') # 自动抓明细工时
+          ws_g.cell(row=15, column=3, value='=B15/8')
+          ws_g.cell(row=15, column=4, value='=C15*B4') # 人天 * 费率
+          
+          ws_g.cell(row=16, column=1, value='Vehicle Preparation (车辆整备)')
+          ws_g.cell(row=16, column=2, value='=SUM(Detail!D14:D15)')
+          ws_g.cell(row=16, column=3, value='=B16/8')
+          ws_g.cell(row=16, column=4, value='=C16*B4')
+          
+          ws_g.cell(row=17, column=1, value='SW Management & Development (软件与研发)')
+          ws_g.cell(row=17, column=2, value='=SUM(Detail!D16:D18)')
+          ws_g.cell(row=17, column=3, value='=B17/8')
+          ws_g.cell(row=17, column=4, value='=C17*B4')
+          
+          # 刷入基础样式
+          for r in range(15, 18):
+              ws_g.cell(row=r, column=2).number_format = '#,##0'
+              ws_g.cell(row=r, column=3).number_format = '0.0'
+              ws_g.cell(row=r, column=4).number_format = '￥#,##0.00'
+              ws_g.cell(row=r, column=2).alignment = align_center
+              ws_g.cell(row=r, column=3).alignment = align_center
+              ws_g.cell(row=r, column=4).alignment = align_right
+              for c in range(1, 5):
+                  ws_g.cell(row=r, column=c).font = font_main; ws_g.cell(row=r, column=c).border = thin_border
+                  
+          # 总计行
+          ws_g.cell(row=18, column=1, value='总计 (Total)').font = font_bold
+          ws_g.cell(row=18, column=2, value='=SUM(B15:B17)').font = font_bold
+          ws_g.cell(row=18, column=3, value='=SUM(C15:C17)').font = font_bold
+          ws_g.cell(row=18, column=4, value='=SUM(D15:D17)').font = font_bold
+          ws_g.cell(row=18, column=2).alignment = align_center
+          ws_g.cell(row=18, column=3).alignment = align_center
+          ws_g.cell(row=18, column=4).alignment = align_right
+          ws_g.cell(row=18, column=4).number_format = '￥#,##0.00'
+          ws_g.cell(row=18, column=3).number_format = '0.0'
+          for c in range(1, 5):
+              ws_g.cell(row=18, column=c).fill = fill_total; ws_g.cell(row=18, column=c).border = thin_border
+
+          # ==========================================
+          # 2. 绘制 Sheet 2: Detail (一比一还原图2打勾矩阵)
+          # ==========================================
+          ws_d.cell(row=1, column=1, value='标准人天费率设定:').font = font_bold
+          ws_d.cell(row=1, column=2, value=2000).font = font_bold # 基础单价
+          ws_d.cell(row=1, column=2).number_format = '￥#,##0'
+          
+          # 双层复杂矩阵表头
+          d_start_row = 11
+          headers_d = ['Category (管理大类)', 'Item (具体开发/测试内容)', 'Working days', 'Working Hours']
+          for c_i, text in enumerate(headers_d, start=1):
+              c = ws_d.cell(row=d_start_row, column=c_i, value=text)
+              c.font = font_bold; c.fill = fill_gray; c.border = thin_border; c.alignment = align_center
+              
+          matrix_cols = [
+              'BBA - EE\n(Vehicle Test in SW)', 'BBA - TE\n(Bench Test in ST)', 
+              'BBA - SE\n(Vehicle Test in SW)', 'BBA - CD\n(Bench Test in ST)',
+              'MINI - EE\n(Vehicle Test in SW)', 'MINI - TE\n(Bench Test in ST)'
+          ]
+          for idx, h in enumerate(matrix_cols, start=5):
+              c = ws_d.cell(row=d_start_row, column=idx, value=h)
+              c.font = font_bold; c.fill = fill_gray; c.border = thin_border; c.alignment = align_center
+
+          # 核心条目矩阵数据 (包含 ✓ 分布)
+          items_data = [
+              ['Vehicle Management', 'Vehicle Tracking Support', 10, 80, ['✓', '', '✓', '', '✓', '']],
+              ['Vehicle Management', 'Vehicle Engineering Support', 15, 120, ['✓', '✓', '✓', '✓', '', '']],
+              ['Vehicle Preparation', 'Vehicle Components Procurement', 5, 40, ['', '', '✓', '✓', '✓', '✓']],
+              ['Vehicle Preparation', 'Apply for Connected Drive', 3, 24, ['✓', '✓', '', '', '✓', '✓']],
+              ['SW Management & Dev', 'Reflash Cluster', 8, 64, ['✓', '', '✓', '', '✓', '']],
+              ['SW Management & Dev', 'Reflash Headunit', 8, 64, ['', '✓', '', '✓', '', '✓']],
+              ['SW Management & Dev', 'ITS Script Development', 20, 160, ['✓', '✓', '✓', '✓', '✓', '✓']]
+          ]
+
+          for r_idx, row_info in enumerate(items_data, start=d_start_row+1):
+              ws_d.cell(row=r_idx, column=1, value=row_info[0]).alignment = align_left
+              ws_d.cell(row=r_idx, column=2, value=row_info[1]).alignment = align_left
+              ws_d.cell(row=r_idx, column=3, value=row_info[2]).alignment = align_center
+              ws_d.cell(row=r_idx, column=4, value=row_info[3]).alignment = align_center
+              
+              for c_idx, mark in enumerate(row_info[4], start=5):
+                  cell = ws_d.cell(row=r_idx, column=c_idx, value=mark)
+                  cell.alignment = align_center
+                  if mark == '✓': cell.fill = fill_green # 打勾上绿底
+            
+              for col in range(1, 5 + len(matrix_cols)):
+                  c_obj = ws_d.cell(row=r_idx, column=col)
+                  c_obj.font = font_main; c_obj.border = thin_border
+
+          # 底部黄色总计工时框
+          tot_r = d_start_row + len(items_data) + 1
+          ws_d.cell(row=tot_r, column=3, value='Total Hours:').font = font_bold
+          ws_d.cell(row=tot_r, column=3).alignment = align_right
+          t_cell = ws_d.cell(row=tot_r, column=4, value=f'=SUM(D12:D{tot_r-1})')
+          t_cell.font = font_bold; t_cell.fill = fill_yellow; t_cell.border = thin_border; t_cell.alignment = align_center
+
+          # 合并左侧同类大项
+          ws_d.merge_cells('A12:A13')
+          ws_d.merge_cells('A14:A15')
+          ws_d.merge_cells('A16:A18')
+
+          # ==========================================
+          # 3. 自动适配两张表的最优列宽
+          # ==========================================
+          for sheet in [ws_g, ws_d]:
+              for col in sheet.columns:
+                  max_len = max(len(str(cell.value or '')) for cell in col)
+                  col_letter = get_column_letter(col.column)
+                  sheet.column_dimensions[col_letter].width = max(max_len + 3, 13)
+          ws_g.column_dimensions['A'].width = 30
+          ws_d.column_dimensions['A'].width = 22
+          ws_d.column_dimensions['B'].width = 32
+
           wb.save('项目研发报价明细表_标准模版.xlsx')
           "
 
