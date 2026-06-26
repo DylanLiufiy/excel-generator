@@ -1,15 +1,15 @@
 name: Auto Generate Excel
-on: [push, workflow_dispatch] # 允许手动和提交时触发
+on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -18,45 +18,33 @@ jobs:
 
       - name: Run script
         run: |
-          # 如果此时还没有app.py，这里先用Python直接内联创建它
           python -c "
           import openpyxl
           from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
           wb = openpyxl.Workbook()
           ws_g = wb.active; ws_g.title = 'General'; ws_d = wb.create_sheet('Detail')
           ws_g.views.sheetView.showGridLines = True; ws_d.views.sheetView.showGridLines = True
-          
-          # 核心极简样式
           f_h = Font(name='Microsoft YaHei', size=11, bold=True, color='FFFFFF')
           fill_b = PatternFill(start_color='1F497D', end_color='1F497D', fill_type='solid')
-          
-          # 简单填入核心框架
           ws_g['A1'] = '项目研发项目报价单 (汇总概述)'; ws_g['A1'].font = Font(name='Microsoft YaHei', size=14, bold=True)
           ws_g.cell(row=3, column=1, value='项目名称：'); ws_g.cell(row=3, column=2, value='[请替换名称]')
-          
           headers = ['模块/分类', '人天总计', '费用总计', '核心说明']
           for idx, text in enumerate(headers, start=1):
-              c = ws_g.cell(row=5, column=idx, value=text)
-              c.font = f_h; c.fill = fill_b
-              
+              c = ws_g.cell(row=5, column=idx, value=text); c.font = f_h; c.fill = fill_b
           ws_g.cell(row=6, column=1, value='01 前端开发')
           ws_g.cell(row=6, column=2, value='=SUM(Detail!C4:C6)')
           ws_g.cell(row=6, column=3, value='=SUM(Detail!E4:E6)')
-          
           ws_d.cell(row=1, column=1, value='标准人天费率'); ws_d.cell(row=1, column=2, value=2000)
           hd_d = ['序号', '开发内容', '人天', '单价', '费用小计', '备注']
           for idx, text in enumerate(hd_d, start=1):
-              c = ws_d.cell(row=3, column=idx, value=text)
-              c.font = f_h; c.fill = fill_b
-              
+              c = ws_d.cell(row=3, column=idx, value=text); c.font = f_h; c.fill = fill_b
           ws_d.append([1, '用户登录与权限页面', 2, '=B1', '=C4*D4', '对接微信'])
           ws_d.append([2, '核心数据大屏', 5, '=B1', '=C5*D5', '高要求动效'])
-          
           wb.save('项目研发报价明细表_标准模版.xlsx')
           "
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: excel-budget-sheet
           path: 项目研发报价明细表_标准模版.xlsx
