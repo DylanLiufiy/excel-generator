@@ -18,7 +18,7 @@ jobs:
 
       - name: Run script
         run: |
-          python -c "
+          cat << 'EOF' > app.py
           import openpyxl
           from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
           from openpyxl.utils import get_column_letter
@@ -46,11 +46,13 @@ jobs:
           align_left = Alignment(horizontal='left', vertical='center', wrap_text=True)
           align_right = Alignment(horizontal='right', vertical='center', wrap_text=True)
 
-          # 1. General Sheet
+          # ==========================================
+          # 1. 绘制 Sheet 1: General (总体概述)
+          # ==========================================
           ws_g.merge_cells('A1:D1')
           ws_g['A1'] = '项目研发费用与工时预算报价单 (汇总看板)'
           ws_g['A1'].font = font_title; ws_g['A1'].fill = fill_dark_blue; ws_g['A1'].alignment = align_center
-          ws_g.row_dimensions[1].height = 40
+          ws_g.row_dimensions.height = 40
           
           info = [('项目名称：', '[请替换项目名称]', '报价日期：', '2026-06-26'), ('客户公司：', '[请替换客户名称]', '基础人天费率：', '=Detail!B1')]
           for idx, r_data in enumerate(info, start=3):
@@ -104,7 +106,9 @@ jobs:
           ws_g.cell(row=18, column=4).number_format = '￥#,##0.00'; ws_g.cell(row=18, column=3).number_format = '0.0'
           for c in range(1, 5): ws_g.cell(row=18, column=c).fill = fill_total; ws_g.cell(row=18, column=c).border = thin_border
 
-          # 2. Detail Sheet
+          # ==========================================
+          # 2. 绘制 Sheet 2: Detail (明细打勾矩阵)
+          # ==========================================
           ws_d.cell(row=1, column=1, value='标准人天费率设定:').font = font_bold
           ws_d.cell(row=1, column=2, value=2000).font = font_bold
           ws_d.cell(row=1, column=2).number_format = '￥#,##0'
@@ -165,3 +169,12 @@ jobs:
           ws_d.column_dimensions['B'].width = 32
 
           wb.save('项目研发报价明细表_标准模版.xlsx')
+          EOF
+          python app.py
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: excel-budget-sheet
+          path: 项目研发报价明细表_标准模版.xlsx
+          
